@@ -82,36 +82,44 @@ func _update_camera_zoom() -> void:
 
 func _draw() -> void:
 	var col_normal := Color(0.18, 0.18, 0.18, 1.0)
-	var col_recharge := Color(0.0, 0.8, 0.0, 1.0)  # green
-	var col_trap := Color(0.8, 0.0, 0.0, 1.0)      # red
-	var col_exit := Color(0.95, 0.9, 0.1, 1.0)     # yellow
-	var thick := 1.0
+	var col_recharge := Color(0.0, 0.8, 0.0, 1.0)
+	var col_trap := Color(0.8, 0.0, 0.0, 1.0)
+	var col_exit := Color(0.95, 0.9, 0.1, 1.0)
+	var dark := Color(0, 0, 0, 0.8)
+
 	var w := grid_size.x * cell_size.x
 	var h := grid_size.y * cell_size.y
 	var top_left := grid_origin
 
-	# Green recharge tiles
+	# draw tiles
 	for cell in recharge_tiles:
 		var rect := Rect2(grid_origin + Vector2(cell.x * cell_size.x, cell.y * cell_size.y), Vector2(cell_size))
 		draw_rect(rect, col_recharge)
 
-	# Red trap tiles
 	for cell in trap_tiles:
 		var rect := Rect2(grid_origin + Vector2(cell.x * cell_size.x, cell.y * cell_size.y), Vector2(cell_size))
 		draw_rect(rect, col_trap)
 
-	# Yellow exit tile
 	if exit_tile != Vector2i(-1, -1):
 		var rect := Rect2(grid_origin + Vector2(exit_tile.x * cell_size.x, exit_tile.y * cell_size.y), Vector2(cell_size))
 		draw_rect(rect, col_exit)
 
-	# Grid lines
+	# grid lines
 	for x in range(grid_size.x + 1):
 		var p := top_left + Vector2(float(x * cell_size.x), 0.0)
-		draw_line(p, p + Vector2(0.0, float(h)), col_normal, thick)
+		draw_line(p, p + Vector2(0.0, float(h)), col_normal, 1.0)
 	for y in range(grid_size.y + 1):
 		var p := top_left + Vector2(0.0, float(y * cell_size.y))
-		draw_line(p, p + Vector2(float(w), 0.0), col_normal, thick)
+		draw_line(p, p + Vector2(float(w), 0.0), col_normal, 1.0)
+
+	# visibility mask
+	var visible := get_visible_tiles()
+	for x in range(grid_size.x):
+		for y in range(grid_size.y):
+			var cell := Vector2i(x,y)
+			if not visible.has(cell):
+				var rect := Rect2(grid_origin + Vector2(cell.x * cell_size.x, cell.y * cell_size.y), Vector2(cell_size))
+				draw_rect(rect, dark)
 
 func _process(_dt: float) -> void:
 	queue_redraw()
@@ -134,3 +142,27 @@ func consume_trap_tile(cell: Vector2i) -> int:
 
 func is_exit_tile(cell: Vector2i) -> bool:
 	return exit_tile == cell
+	
+func get_visible_tiles() -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	var p = player.grid_pos
+	var dir = player.facing
+
+	# forward
+	var forward = p + dir
+	if in_bounds(forward): tiles.append(forward)
+
+	# left (perpendicular)
+	var left := Vector2i(-dir.y, dir.x)
+	var forward_left = p + left
+	if in_bounds(forward_left): tiles.append(forward_left)
+
+	# right (perpendicular)
+	var right := Vector2i(dir.y, -dir.x)
+	var forward_right = p + right
+	if in_bounds(forward_right): tiles.append(forward_right)
+
+	# current tile (always visible)
+	tiles.append(p)
+
+	return tiles

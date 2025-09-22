@@ -24,15 +24,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		var d := clicked_cell - grid_pos
 		if abs(d.x) + abs(d.y) == 1:
 			_move_to_cell(clicked_cell)
+			
+var facing: Vector2i = Vector2i(0, -1)
 
 func _move_to_cell(next: Vector2i) -> void:
 	if not game.in_bounds(next):
 		return
+	var delta := next - grid_pos
+	if abs(delta.x) + abs(delta.y) == 1:
+		facing = delta  
 	grid_pos = next
-	
-	# ⚡ Trigger tile effects immediately upon entering
 	_check_special_tiles()
-
 	var target: Vector2 = game.cell_to_world(grid_pos)
 	_tween_to(target)
 
