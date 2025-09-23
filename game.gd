@@ -11,9 +11,27 @@ class_name Game
 @onready var player := $Player
 @onready var cam := $Player/Camera2D
 
+@export var hover_fill := Color(0.2, 0.7, 1.0, 0.35)   # cyan-ish glow
+@export var hover_border := Color(0.2, 0.9, 1.0, 1.0)
+@export var hover_border_width := 2.0
+
+@export var music_stream: AudioStream
+@export var music_fade_in := 6.0      # seconds
+@export var music_target_db := -6.0   # final volume (dB)
+@onready var music: AudioStreamPlayer = ($Music if has_node("Music") else null)
+
+var hover_cell: Vector2i = Vector2i(-1, -1)
+
 var recharge_tiles: Array[Vector2i] = []   # green tiles
 var trap_tiles: Array[Vector2i] = []       # red tiles
 var exit_tile: Vector2i = Vector2i(-1, -1) # yellow tile
+
+func _is_clickable_cell(cell: Vector2i) -> bool:
+	if not in_bounds(cell):
+		return false
+	var d = cell - player.grid_pos
+	return abs(d.x) + abs(d.y) == 1
+
 
 func _ready() -> void:
 	player.grid_pos = grid_size / 2
@@ -22,6 +40,20 @@ func _ready() -> void:
 	_configure_camera_limits()
 	_spawn_special_tiles()
 	get_viewport().size_changed.connect(_update_camera_zoom)
+	
+	if music == null:
+		music = AudioStreamPlayer.new()
+		music.name = "Music"
+		add_child(music)
+	
+	# --- Music start + fade-in ---
+	if music_stream:
+		music.stream = music_stream
+		if music.stream is AudioStreamOggVorbis:
+			(music.stream as AudioStreamOggVorbis).loop = true
+		music.volume_db = -80.0
+		music.play()
+		create_tween().tween_property(music, "volume_db", music_target_db, music_fade_in)
 
 func _spawn_special_tiles() -> void:
 	recharge_tiles.clear()
@@ -120,8 +152,27 @@ func _draw() -> void:
 			if not visible.has(cell):
 				var rect := Rect2(grid_origin + Vector2(cell.x * cell_size.x, cell.y * cell_size.y), Vector2(cell_size))
 				draw_rect(rect, dark)
+			if _is_clickable_cell(hover_cell):
+				var rect := Rect2(
+					grid_origin + Vector2(hover_cell.x * cell_size.x, hover_cell.y * cell_size.y),
+					Vector2(cell_size)
+				)
+				draw_rect(rect, hover_fill, true)
+				draw_rect(rect, hover_border, false, hover_border_width)
 
 func _process(_dt: float) -> void:
+	var mouse_world := get_global_mouse_position()
+	var cell := world_to_cell(mouse_world)
+	if in_bounds(cell):
+		hover_cell = cell
+	else:
+		hover_cell = Vector2i(-1, -1)
+
+	if _is_clickable_cell(hover_cell):
+		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
+	else:
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+
 	queue_redraw()
 
 # --- Tile consumption API ---

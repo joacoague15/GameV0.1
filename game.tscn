@@ -1,11 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://bck2kq8tla80"]
+[gd_scene load_steps=5 format=3 uid="uid://bck2kq8tla80"]
 
 [ext_resource type="Script" path="res://game.gd" id="1_kqiqs"]
 [ext_resource type="Script" path="res://player.gd" id="2_3po33"]
+[ext_resource type="AudioStream" uid="uid://bv3ims7bh01v1" path="res://main.ogg" id="2_i1wg3"]
 [ext_resource type="Texture2D" uid="uid://b0gp3mqngpbme" path="res://icon.svg" id="3_8ayg2"]
 
 [node name="Game" type="Node2D"]
 script = ExtResource("1_kqiqs")
+music_stream = ExtResource("2_i1wg3")
 
 [node name="Player" type="Node2D" parent="."]
 script = ExtResource("2_3po33")
